@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 輸出與暫存
+*.srt
+*.mp4
+*.wav
+*.webm
+*.m4a
+*.txt
+*.backup
+*.tmp
+
+# 模型 / 下載快取(不該進 git)
+models/
+.cache/
+HF_HUB_CACHE/
+
+# 本地設定
+settings.local.json
