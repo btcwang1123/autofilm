@@ -1,151 +1,134 @@
-# autofilm — MP4 / YouTube link → YouTube SRT 字幕工具
+# autofilm
 
-把 **本機 MP4 影片** 或 **YouTube 影片網址** 餵進去,自動產生上傳到 YouTube 用的 `.srt` 字幕檔。
+Generate YouTube-ready `.srt` subtitle files from local MP4s or YouTube URLs — fully local and free.
 
 ```
-本機 MP4 ──ffmpeg──▶ 音訊 WAV ──faster-whisper──▶ 逐段轉錄 ──錯別字規則修正──▶ .srt
-YT 連結 ──yt-dlp──▶ 同左
+Local MP4 ──ffmpeg──▶ audio ──faster-whisper──▶ segments ──typo fix──▶ .srt
+YouTube URL ──yt-dlp──▶ same pipeline
 ```
 
-## 快速開始(全新電腦)
+Powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (offline speech-to-text, runs on your machine — nothing uploaded), [yt-dlp](https://github.com/yt-dlp/yt-dlp) (download audio), and ffmpeg.
 
-1. **前置條件**:Python 3.10+ 與 ffmpeg。
+## Features
 
-   ```powershell
-   # Windows
-   winget install Gyan.FFmpeg
-   # 或 Linux / macOS
-   sudo apt install ffmpeg        # Debian/Ubuntu
-   brew install ffmpeg            # macOS
-   ```
+- ✅ Turn **local videos** (mp4/mkv/wav/...) or **YouTube URLs** into `.srt`
+- ✅ **Batch mode**: multiple URLs / files in one run, or a `urls.txt` list file
+- ✅ **Rule-based typo correction** (e.g. `TestFly` → `TestFlight`, simplified→traditional fixes), fully customizable
+- ✅ **Model size choice**: `tiny` → `large-v3` for accuracy/speed tradeoff
+- ✅ **No GPU required** — runs on CPU (GPU auto-detected if available)
+- ✅ Works on **Windows / Linux / macOS**
 
-   安裝後確認 `ffmpeg -version` 可用。(非標準安裝位置才需要另外設 `FFMPEG_PATH` 環境變數指向 ffmpeg 執行檔,一般不用。)
+## Quick Start (Windows)
 
-2. **Clone**:
+The included **`run.bat` does everything for you** — create the venv, install dependencies, and process your files.
 
-   ```powershell
-   git clone https://github.com/btcwang1123/autofilm.git
-   cd autofilm
-   ```
+```bat
+:: 1. Install ffmpeg once  (skip if already installed)
+winget install Gyan.FFmpeg
 
-3. **建環境 + 裝依賴**:
+:: 2. Clone
+git clone https://github.com/btcwang1123/autofilm.git
+cd autofilm
 
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1        # Windows
-   # source .venv/bin/activate         # Linux / macOS
-   python -m pip install -r requirements.txt
-   ```
-
-4. **(可選)預先下載 Whisper 模型**:第一次跑會自動下載,若想先在安裝階段下,執行
-
-   ```powershell
-   python download_model.py            # 預設下載 small
-   ```
-
-5. **開始用**!
-
-## 使用
-
-**本機影片**:
-
-```powershell
-python srt_gen.py D:\videos\我的影片.mp4
+:: 3. Done. Just run it:
+run.bat
 ```
-輸出:`D:\videos\我的影片.srt`(與影片同名、同資料夾)。
 
-**YouTube 影片網址**:
+`run.bat` auto-creates `.venv` and installs `requirements.txt` on first run. Then:
 
-```powershell
+- **Drag & drop** an MP4 onto `run.bat`
+- Or pass URLs / files directly: `run.bat "https://youtu.be/aaa" "https://youtu.be/bbb" video.mp4`
+- Or a URL list: `run.bat urls.txt`
+
+## Quick Start (Linux / macOS)
+
+```bash
+# 1. Install ffmpeg
+sudo apt install ffmpeg      # Debian/Ubuntu   |   brew install ffmpeg   # macOS
+
+# 2. Clone & set up
+git clone https://github.com/btcwang1123/autofilm.git
+cd autofilm
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+## CLI Usage
+
+```bash
+# Single local video → video.srt next to it
+python srt_gen.py path/to/video.mp4
+
+# Single YouTube video → <video-title>.srt in current folder
 python srt_gen.py "https://youtu.be/xxxxxxxxxxxx"
-```
-會自動下載音軌,輸出到「目前資料夾」下的 `<影片標題>.srt`。
 
-**一次轉多支**(網址/本機檔可混合):
+# Multiple inputs (mixed URLs and files)
+python srt_gen.py "https://youtu.be/aaa" "https://youtu.be/bbb" path/to/c.mp4
 
-```powershell
-python srt_gen.py https://youtu.be/aaa https://youtu.be/bbb D:\videos\c.mp4
-```
-依序處理、各自輸出 `.srt`(`<影片標題>.srt` 或本機檔同名)。全部結束才顯示總結。
-
-**大量批次** — 把網址存在文字檔(每行一個,`#` 開頭會被當註解跳過):
-
-```
-# urls.txt
-https://youtu.be/aaa
-https://youtu.be/bbb
-https://youtu.be/ccc
-```
-```powershell
+# Batch from a list file (one URL per line, '#' = comment)
 python srt_gen.py urls.txt
 ```
-這是最保險的方式:避開命令列網址含 `&` 等特殊字元被殼層誤解的問題。
 
-**Windows 超簡單方式**:把 MP4 檔直接拖到 `run.bat` 上,或在視窗輸入 `run.bat 網址1 網址2 ...`(多個直接空格分開)或 `run.bat urls.txt`。
+### Options
 
-常用參數:
-
-| 參數 | 說明 | 預設 |
+| Arg | Description | Default |
 |---|---|---|
-| `--model` | 模型大小:`tiny` `base` `small` `medium` `large-v3` | `small` |
-| `--lang` | 語言代碼(如 `zh`、`en`;留空自動偵測,多輸入時套用全部) | 空 = 自動 |
-| `--device` | 運算裝置:`auto` / `cpu` / `cuda` | `auto` |
-| `--no-fix` | 關閉錯別字規則修正 | 開著 |
+| `--model` | Whisper model: `tiny` `base` `small` `medium` `large-v3` | `small` |
+| `--lang` | Language code (e.g. `zh`, `en`); empty = auto-detect (applies to all inputs) | auto |
+| `--device` | Device: `auto` / `cpu` / `cuda` | `auto` |
+| `--no-fix` | Disable the typo-correction pass | on |
 
-## 模型大小怎麼選
+### Model size tradeoff
 
-| 模型 | 速度(CPU) | 中文準確度 | 建議 |
+| Model | Speed (CPU) | Chinese accuracy | Tip |
 |---|---|---|---|
-| `tiny` | 極快 | 差 | 不建議 |
-| `base` | 快 | 尚可 | 快速預覽 |
-| `small` | 中等 | 良好 | **預設,日常用** |
-| `medium` | 慢 | 很好 | 較長/較難影片 |
-| `large-v3` | 很慢 | 最好 | 追求極致品質(需 GPU 佳) |
+| `tiny` | very fast | poor | not recommended |
+| `base` | fast | ok | quick preview |
+| `small` | medium | good | **default** |
+| `medium` | slow | very good | longer/difficult videos |
+| `large-v3` | very slow | best | max quality (GPU helps) |
 
-**指定模型大小**(預設 `small`,可隨時切換):
-
-```powershell
-python srt_gen.py https://youtu.be/xxx --model medium
+```bash
+python srt_gen.py "https://youtu.be/xxx" --model medium
 python srt_gen.py urls.txt --model large-v3
 ```
 
-也可透過 `run.bat` 帶參數:`run.bat urls.txt --model medium`。
+The first time you use a model it is downloaded automatically (`medium` ≈1.5 GB, `large` ≈3 GB); afterward it is cached locally. You can pre-download with `python download_model.py`.
 
-首次使用某模型時會自動下載一次(medium 約 1.5GB、large 約 3GB,要網路)。之後離線可用。
+> **Note**: `medium`/`large` models disable the VAD silence filter by default — large-model VAD can be over-aggressive and skip real speech. The model's own segmentation handles it instead. `small` and below keep VAD for speed.
 
-> 註:`medium`/`large` 等大模型預設**關閉 VAD 靜音過濾**(大模型 VAD 較激進,有時把語音當靜音誤跳),由 Whisper 自行判段,確保不漏內容。`small` 以下維持 VAD 加速。
+## How it works
 
-## 全程是怎麼跑出來的(細節說明)
+1. **Audio extraction** — ffmpeg converts the video/audio track to a 16 kHz mono WAV (ideal for Whisper).
+2. **Transcription** — faster-whisper splits speech into segments with timestamps.
+3. **Typo correction (rule-based)** — offline & free:
+   - **Term/lookup table**: bundled examples like `TestFly`→`TestFlight`, `德特律`→`底特律`, `尼日利亚`→`奈及利亞` — add your own in `corrections.json`.
+   - **Foreign terms**: Whisper's `[ADD]` tags for uncertain English/tech terms (e.g. ATK/ROC/RNG) are kept as-is.
+   - **Punctuation**: fullwidth commas/periods for Chinese subtitles, extra spaces removed.
+4. **SRT output** — standard `.srt`, upload-ready.
 
-1. **抽音軌**:ffmpeg 把 MP4 的音軌轉成 16kHz 單聲道 WAV(Whisper 最佳輸入)。
-2. **轉錄**:faster-whisper(Whisper 的加速版)把語音切成片段逐段轉成文字,並記錄每段的開始/結束時間。
-3. **錯別字訂正**:規則式修正(非 LLM,零成本、離線)。修正下列幾類:
-   - **專有名詞/人名查表**:內建常見錯字對照表(如「德特律→底特律」「尼日利亚→奈及利亞」「TestFly→TestFlight」),可用 `corrections.json` 自訂(見下)。
-   - **ADD 標記**:Whisper 常把英文/術語(如 ATK/ROC/RNG)以 `[ADD]` 標記,保留原樣、不誤傷。
-   - **全形/半形標點**:中文字幕統一成全形標點、移除多餘空格。
-4. **輸出 SRT**:組合成標準 SRT 時間軸,可直接上傳 YouTube。
+## Customizing typo corrections
 
-### 自訂錯字對照(corrections.json)
-
-在程式同目錄放一個 `corrections.json`(不存在也 OK,會自動建立範本):
+Create `corrections.json` in the project folder (auto-created with a template if missing):
 
 ```json
 {
-  "替换规则": { "錯字": "正確字" },
+  "替换规则": { "wrong": "right" },
   "忽略名詞": []
 }
 ```
 
-- `"替换规则"`:逐字/逐詞把「誤植文字」換成「正確文字」(整句標準化,最常用)。
-- `"忽略名詞"`:要讓逐詞「首次修正」跳過的詞(例如人名、廠牌),避免被誤替換。
+- `替换规则` — string replacements applied to every segment (most common use).
+- `忽略名詞` — terms to skip in per-token fixing (names, brands) so they aren't altered.
 
-## 疑難排解
+## Troubleshooting
 
-- **找不到 ffmpeg**:確認 `ffmpeg -version` 有輸出;若不是標準安裝,設 `FFMPEG_PATH` 環境變數指向 ffmpeg 執行檔。
-- **GPU 加速**:程式開頭會自動偵測;想用 GPU 需自行裝 NVIDIA CUDA 工具。一般 CPU 就能用,只是較慢。
-- **第一次下載模型很久**:模型第一次要下載,之後快取在本機。
-- **YouTube 上傳字幕**:在 YouTube Studio → 字幕 → 上傳子標(Captions)→ 選「自動產生(如果沒有)」或直接選「.SRT」檔即可。
+- **ffmpeg not found**: verify `ffmpeg -version` works. If installed somewhere non-standard, set the `FFMPEG_PATH` env var to the ffmpeg executable. (On Windows, winget/standard installs are auto-detected.)
+- **GPU**: runtime auto-detects; for GPU you must install NVIDIA CUDA tooling yourself. CPU works everywhere, just slower.
+- **First model download is slow**: one-time download, cached afterward.
+- **Uploading to YouTube**: YouTube Studio → Subtitles → Upload a file, choose your `.srt`.
 
 ## License
 
-個人使用工具。
+Personal-use tool.
