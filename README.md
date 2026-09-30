@@ -71,6 +71,25 @@ python srt_gen.py "https://youtu.be/aaa" "https://youtu.be/bbb" path/to/c.mp4
 python srt_gen.py urls.txt
 ```
 
+#### Example `urls.txt`
+
+Create a plain text file named `urls.txt` in the autofilm folder, one URL per line.
+Lines starting with `#` and empty lines are ignored, and you can mix YouTube links with local files:
+
+```
+# My weekly uploads — one item per line, '#' lines are skipped
+https://youtu.be/aaa111
+https://youtu.be/bbb222
+
+# a local file also works (use the path syntax of your OS)
+/home/me/videos/my-video.mp4      # Linux/macOS
+D:\videos\my-video.mp4            # Windows
+
+https://www.youtube.com/watch?v=ccc333
+```
+
+Then run `run.bat urls.txt` (Windows) or `python srt_gen.py urls.txt` (any OS) — each item becomes its own `.srt`.
+
 ### Options
 
 | Arg | Description | Default |
