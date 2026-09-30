@@ -9,9 +9,13 @@ __pycache__/
 *.wav
 *.webm
 *.m4a
-*.txt
 *.backup
 *.tmp
+
+# 網址清單檔(每行一個網址的那種,別推上 git)
+/urls.txt
+/*.txt
+!requirements.txt
 
 # 模型 / 下載快取(不該進 git)
 models/

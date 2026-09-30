@@ -2,28 +2,48 @@
 
 把 **本機 MP4 影片** 或 **YouTube 影片網址** 餵進去,自動產生上傳到 YouTube 用的 `.srt` 字幕檔。
 
-流程:
-
 ```
 本機 MP4 ──ffmpeg──▶ 音訊 WAV ──faster-whisper──▶ 逐段轉錄 ──錯別字規則修正──▶ .srt
 YT 連結 ──yt-dlp──▶ 同左
 ```
 
-## 安裝(第一次)
+## 快速開始(全新電腦)
 
-```powershell
-# 1. Python 虛擬環境 + 依賴(會自動偵測 GPU,faster-whisper 會加速)
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+1. **前置條件**:Python 3.10+ 與 ffmpeg。
 
-# 2. 確認 ffmpeg 可用(有裝就略過)
-ffmpeg -version
-#   若找不到:winget install --id Gyan.FFmpeg --scope user
+   ```powershell
+   # Windows
+   winget install Gyan.FFmpeg
+   # 或 Linux / macOS
+   sudo apt install ffmpeg        # Debian/Ubuntu
+   brew install ffmpeg            # macOS
+   ```
 
-# 3. 下載 Whisper 模型(只需一次,如 small 中文模型約 500MB)
-python download_model.py
-```
+   安裝後確認 `ffmpeg -version` 可用。(非標準安裝位置才需要另外設 `FFMPEG_PATH` 環境變數指向 ffmpeg 執行檔,一般不用。)
+
+2. **Clone**:
+
+   ```powershell
+   git clone https://github.com/btcwang1123/autofilm.git
+   cd autofilm
+   ```
+
+3. **建環境 + 裝依賴**:
+
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1        # Windows
+   # source .venv/bin/activate         # Linux / macOS
+   python -m pip install -r requirements.txt
+   ```
+
+4. **(可選)預先下載 Whisper 模型**:第一次跑會自動下載,若想先在安裝階段下,執行
+
+   ```powershell
+   python download_model.py            # 預設下載 small
+   ```
+
+5. **開始用**!
 
 ## 使用
 
@@ -61,15 +81,15 @@ python srt_gen.py urls.txt
 ```
 這是最保險的方式:避開命令列網址含 `&` 等特殊字元被殼層誤解的問題。
 
-**超簡單方式**:把 MP4 檔直接拖到 `run.bat` 上,或在視窗輸入 `run.bat 網址1 網址2 ...`(多個直接空格分開)或 `run.bat urls.txt`。
+**Windows 超簡單方式**:把 MP4 檔直接拖到 `run.bat` 上,或在視窗輸入 `run.bat 網址1 網址2 ...`(多個直接空格分開)或 `run.bat urls.txt`。
 
 常用參數:
 
 | 參數 | 說明 | 預設 |
 |---|---|---|
 | `--model` | 模型大小:`tiny` `base` `small` `medium` `large-v3` | `small` |
-| `--lang` | 語言(留空自動偵測) | 空 = 自動 |
-| `--out` | 指定輸出檔 | 自動依影片命名 |
+| `--lang` | 語言代碼(如 `zh`、`en`;留空自動偵測,多輸入時套用全部) | 空 = 自動 |
+| `--device` | 運算裝置:`auto` / `cpu` / `cuda` | `auto` |
 | `--no-fix` | 關閉錯別字規則修正 | 開著 |
 
 ## 模型大小怎麼選
@@ -100,9 +120,9 @@ python srt_gen.py urls.txt --model large-v3
 1. **抽音軌**:ffmpeg 把 MP4 的音軌轉成 16kHz 單聲道 WAV(Whisper 最佳輸入)。
 2. **轉錄**:faster-whisper(Whisper 的加速版)把語音切成片段逐段轉成文字,並記錄每段的開始/結束時間。
 3. **錯別字訂正**:規則式修正(非 LLM,零成本、離線)。修正下列幾類:
-   - **專有名詞/人名查表**:內建常見錯字對照表(如「劉備」「易建聯」等),可用 `corrections.json` 自訂(見下)。
-   - **ADD 標記**:Whisper 常把英文/術語擋在括號外,套用**排除式邏輯**(不在白名單內的英文保留原樣)。對「ATK/ROC/RNG」這類遊戲術語不誤傷。
-   - **全形/半形標點**:把「,」等地統一成正確中文標點、多餘空格移除。
+   - **專有名詞/人名查表**:內建常見錯字對照表(如「德特律→底特律」「尼日利亚→奈及利亞」「TestFly→TestFlight」),可用 `corrections.json` 自訂(見下)。
+   - **ADD 標記**:Whisper 常把英文/術語(如 ATK/ROC/RNG)以 `[ADD]` 標記,保留原樣、不誤傷。
+   - **全形/半形標點**:中文字幕統一成全形標點、移除多餘空格。
 4. **輸出 SRT**:組合成標準 SRT 時間軸,可直接上傳 YouTube。
 
 ### 自訂錯字對照(corrections.json)
@@ -111,17 +131,18 @@ python srt_gen.py urls.txt --model large-v3
 
 ```json
 {
-  "替換規則": { "錯字": "正確字" },
+  "替换规则": { "錯字": "正確字" },
   "忽略名詞": []
 }
 ```
 
-- `"替換規則"`:逐字/逐詞把「誤植文字」換成「正確文字」(整句標準化,最常用)。例如 `{ "德特律": "底特律", "尼日利亚": "奈及利亞" }`。
+- `"替换规则"`:逐字/逐詞把「誤植文字」換成「正確文字」(整句標準化,最常用)。
 - `"忽略名詞"`:要讓逐詞「首次修正」跳過的詞(例如人名、廠牌),避免被誤替換。
 
 ## 疑難排解
 
-- **GPU 偵測**:`python -c "import faster_whisper"` 後跑一次看要不要裝 CUDA 工具。一般 CPU 就能用,只是較慢。
+- **找不到 ffmpeg**:確認 `ffmpeg -version` 有輸出;若不是標準安裝,設 `FFMPEG_PATH` 環境變數指向 ffmpeg 執行檔。
+- **GPU 加速**:程式開頭會自動偵測;想用 GPU 需自行裝 NVIDIA CUDA 工具。一般 CPU 就能用,只是較慢。
 - **第一次下載模型很久**:模型第一次要下載,之後快取在本機。
 - **YouTube 上傳字幕**:在 YouTube Studio → 字幕 → 上傳子標(Captions)→ 選「自動產生(如果沒有)」或直接選「.SRT」檔即可。
 

@@ -21,6 +21,7 @@ YT 影片輸出:目前資料夾下 <影片標題>.srt
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -36,22 +37,42 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 
 from corrector import Corrector
 
-# ffmpeg 路徑:先試 PATH,找不到再用 winget 裝的預設位置
-_FFMPEG_CANDIDATES = [
-    "ffmpeg",
-    r"C:\Users\btcwang1123\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0.2-full_build\bin\ffmpeg.exe",
-]
-
-
+# ffmpeg 搜尋順序:
+#   1. FFMPEG_PATH 環境變數(非標準安裝時可自訂)
+#   2. 系統 PATH 上的 ffmpeg
+#   3. Windows winget 的標準安裝位置(自動掃描,不寫死使用者名稱)
 def find_ffmpeg() -> str:
     import shutil
-    for cand in _FFMPEG_CANDIDATES:
+
+    candidates: list[str] = []
+    if env := os.environ.get("FFMPEG_PATH"):
+        candidates.append(env)
+    candidates.append("ffmpeg")
+    candidates.extend(_winget_ffmpeg_candidates())
+
+    for cand in candidates:
         if shutil.which(cand) or Path(cand).exists():
             return cand
     raise RuntimeError(
-        "找不到 ffmpeg。請先安裝:winget install --id Gyan.FFmpeg --scope user(或用 ffmpeg 官方版),"
-        "或把路徑加進這支程式的 _FFMPEG_CANDIDATES。"
+        "找不到 ffmpeg。請先安裝並加到 PATH:winget install --id Gyan.FFmpeg "
+        "(Linux/macOS:apt install ffmpeg / brew install ffmpeg),"
+        "或設定 FFMPEG_PATH 環境變數指向 ffmpeg 執行檔。"
     )
+
+
+def _winget_ffmpeg_candidates() -> list[str]:
+    """掃描 winget 的標準安裝資料夾,找出 ffmpeg.exe(Gyan.FFmpeg)。"""
+    import glob
+
+    patterns = [
+        r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_*\ffmpeg-*\bin\ffmpeg.exe",
+        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+    ]
+    found: list[str] = []
+    for pat in patterns:
+        expanded = os.path.expandvars(pat)
+        found.extend(glob.glob(expanded))
+    return found
 
 
 def is_url(s: str) -> bool:
