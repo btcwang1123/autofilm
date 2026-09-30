@@ -34,11 +34,12 @@ cd autofilm
 run.bat
 ```
 
-`run.bat` auto-creates `.venv` and installs `requirements.txt` on first run. Then:
+`run.bat` auto-creates `.venv` and installs `requirements.txt` on first run. Then use one of these:
 
-- **Drag & drop** an MP4 onto `run.bat`
-- Or pass URLs / files directly: `run.bat "https://youtu.be/aaa" "https://youtu.be/bbb" video.mp4`
+- **Type the command** (simplest to understand): `run.bat test.mp4` (run from the `autofilm` folder, so cmd finds `run.bat`; your MP4 can be anywhere, just use its path)
+- Pass URLs / files directly: `run.bat "https://youtu.be/aaa" "https://youtu.be/bbb" video.mp4`
 - Or a URL list: `run.bat urls.txt`
+- Or **drag & drop**: open File Explorer, left-click your MP4 and, keeping the button held, drag it onto the `run.bat` icon and release. It runs `run.bat <your-file>` for you. Both ways do the same thing.
 
 ## Quick Start (Linux / macOS)
 
