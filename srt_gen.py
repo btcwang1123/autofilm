@@ -127,15 +127,36 @@ class Segment:
     text: str
 
 
-def transcribe(model, wav: Path, language: str | None, vad: bool = True) -> list[Segment]:
-    """用 faster-whisper 把 WAV 轉成含時間戳的片段。"""
-    segments, _info = model.transcribe(
+def transcribe(model, wav: Path, language: str | None, vad: bool = True, show_progress: bool = True) -> list[Segment]:
+    """用 faster-whisper 把 WAV 轉成含時間戳的片段。
+
+    show_progress=True 時以 tqdm 顯示轉錄進度條(以音檔時間為單位),
+    讓長影片執行時能確認沒卡住。
+    """
+    segments, info = model.transcribe(
         str(wav),
         language=language,      # None = 自動偵測
         vad_filter=vad,         # VAD 跳靜音:小模型加速,大模型另見下方
         beam_size=5,
     )
-    return [Segment(seg.start, seg.end, seg.text.strip()) for seg in segments]
+    if not show_progress:
+        return [Segment(seg.start, seg.end, seg.text.strip()) for seg in segments]
+
+    from tqdm import tqdm
+    total = float(getattr(info, "duration", 0) or 0)
+    pbar = tqdm(total=total, unit="s", desc="Transcribing",
+                file=sys.stderr, ncols=78, disable=False)
+    result: list[Segment] = []
+    last_end = 0.0
+    for seg in segments:
+        result.append(Segment(seg.start, seg.end, seg.text.strip()))
+        step = max(seg.end - last_end, 0.0)
+        if step:
+            pbar.update(step)
+        last_end = seg.end
+        pbar.set_postfix_str(seg.text.strip()[:18], refresh=False)
+    pbar.close()
+    return result
 
 
 def segments_to_srt(segments: list[Segment], fixer: Corrector | None) -> str:

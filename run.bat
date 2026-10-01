@@ -7,6 +7,9 @@ rem If requirements.txt changes, deps are updated on the next run (pip is idempo
 setlocal
 cd /d "%~dp0"
 
+rem UTF-8 codepage so the progress bar / Chinese text display cleanly
+chcp 65001 >nul
+
 set "PYEXE=.venv\Scripts\python.exe"
 
 rem ---- 1. Ensure venv exists ----
