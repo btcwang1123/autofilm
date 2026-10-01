@@ -1,2 +1,6 @@
 faster-whisper>=1.1.0
 yt-dlp>=2025.1.15
+
+# av 19.x 使用了僅 Python 3.14+ 的 open(metadata_errors=...) 參數,
+# 在 Python 3.10-3.13 無法使用。鎖定 <19 以相容所有常見 Python 版本。
+av>=18.0,<19
