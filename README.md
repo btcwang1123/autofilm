@@ -1,5 +1,7 @@
 # autofilm
 
+> **English** · [繁體中文](README.zh-TW.md)
+
 Generate YouTube-ready `.srt` subtitle files from local MP4s or YouTube URLs — fully local and free.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
