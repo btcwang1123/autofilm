@@ -1,0 +1,30 @@
+# ============================================================
+#  autofilm - URL list example
+#  Copy this file to urls.txt (or use it directly) and run:
+#      Windows : run.bat urls.txt
+#      Any OS  : python srt_gen.py urls.txt
+#
+#  Rules:
+#    - one item per line
+#    - lines starting with '#' are ignored
+#    - empty lines are ignored
+#    - YouTube URLs and local files can be mixed
+#    - each item produces its own .srt in the current folder
+# ============================================================
+
+# --- YouTube videos ---
+https://youtu.be/aaaaaaaaaaa
+https://youtu.be/bbbbbbbbbbb
+https://www.youtube.com/watch?v=ccccccccccc
+
+# --- local files (use the path syntax of your OS) ---
+# Windows:
+# D:\videos\my-video.mp4
+# D:\videos\another.mp4
+# Linux / macOS:
+# /home/me/videos/my-video.mp4
+# /Users/me/videos/another.mp4
+
+# --- comments work anywhere ---
+# 2026 review video
+https://youtu.be/ddddddddddd

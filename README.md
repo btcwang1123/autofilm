@@ -2,6 +2,8 @@
 
 Generate YouTube-ready `.srt` subtitle files from local MP4s or YouTube URLs — fully local and free.
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 ```
 Local MP4 ──ffmpeg──▶ audio ──faster-whisper──▶ segments ──typo fix──▶ .srt
 YouTube URL ──yt-dlp──▶ same pipeline
@@ -12,11 +14,12 @@ Powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (offline 
 ## Features
 
 - ✅ Turn **local videos** (mp4/mkv/wav/...) or **YouTube URLs** into `.srt`
-- ✅ **Batch mode**: multiple URLs / files in one run, or a `urls.txt` list file
+- ✅ **Batch mode**: multiple URLs / files in one run, or a `urls.txt` list file (see `urls.example.txt`)
 - ✅ **Rule-based typo correction** (e.g. `TestFly` → `TestFlight`, simplified→traditional fixes), fully customizable
 - ✅ **Model size choice**: `tiny` → `large-v3` for accuracy/speed tradeoff
+- ✅ **Live progress bar** during transcription — you always know it's working
 - ✅ **No GPU required** — runs on CPU (GPU auto-detected if available)
-- ✅ Works on **Windows / Linux / macOS**
+- ✅ Works on **Windows / Linux / macOS** (Python 3.10+)
 
 ## Quick Start (Windows)
 
@@ -40,6 +43,20 @@ run.bat
 - Pass URLs / files directly: `run.bat "https://youtu.be/aaa" "https://youtu.be/bbb" video.mp4`
 - Or a URL list: `run.bat urls.txt`
 - Or **drag & drop**: open File Explorer, left-click your MP4 and, keeping the button held, drag it onto the `run.bat` icon and release. It runs `run.bat <your-file>` for you. Both ways do the same thing.
+
+**What it looks like** (first run does setup first):
+
+```
+[2/3] Ensuring dependencies are installed (requirements.txt)...
+Loading Whisper model: small ...
+
+===== Processing [https://youtu.be/xxxxxxxxxxxx] =====
+Downloading YouTube audio...
+  Extracting audio...
+Transcribing:  74%|█████████████▎ | 14.0/19s [00:00<00:00, 38.8s/s, some preview text]
+  Done: 123 segments.
+  ✓ Saved subtitles to: <video-title>.srt
+```
 
 ## Quick Start (Linux / macOS)
 
@@ -73,8 +90,15 @@ python srt_gen.py urls.txt
 
 #### Example `urls.txt`
 
-Create a plain text file named `urls.txt` in the autofilm folder, one URL per line.
-Lines starting with `#` and empty lines are ignored, and you can mix YouTube links with local files:
+A ready-to-fill template is included in the repo: **`urls.example.txt`**.
+Copy it to `urls.txt` and fill in your links:
+
+```bat
+copy urls.example.txt urls.txt    &   notepad urls.txt     :: Windows
+cp urls.example.txt urls.txt      &&  nano urls.txt          # Linux / macOS
+```
+
+Or create the file yourself, one URL per line. Lines starting with `#` and empty lines are ignored, and you can mix YouTube links with local files:
 
 ```
 # My weekly uploads — one item per line, '#' lines are skipped
@@ -151,4 +175,4 @@ Create `corrections.json` in the project folder (auto-created with a template if
 
 ## License
 
-Personal-use tool.
+[MIT](LICENSE) — free to use, modify, distribute, and use commercially, with attribution.

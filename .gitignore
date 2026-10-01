@@ -16,6 +16,7 @@ __pycache__/
 /urls.txt
 /*.txt
 !requirements.txt
+!urls.example.txt
 
 # 模型 / 下載快取(不該進 git)
 models/
