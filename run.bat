@@ -2,12 +2,15 @@
 rem autofilm - MP4 / YouTube URL to SRT subtitle generator.
 rem Usage: double-click, drag & drop an MP4 onto this file, or run:
 rem     run.bat <file.mp4 | url | urls.txt> [url2 ...]
-rem First run auto-creates .venv and installs dependencies.
+rem First run creates .venv and installs dependencies.
+rem If requirements.txt changes, deps are updated on the next run (pip is idempotent).
 setlocal
 cd /d "%~dp0"
 
-rem ---- Auto-create venv if missing ----
-if not exist ".venv\Scripts\python.exe" (
+set "PYEXE=.venv\Scripts\python.exe"
+
+rem ---- 1. Ensure venv exists ----
+if not exist "%PYEXE%" (
     echo [1/3] Creating virtual environment...
     python -m venv .venv
     if errorlevel 1 (
@@ -15,18 +18,20 @@ if not exist ".venv\Scripts\python.exe" (
         pause
         exit /b 1
     )
-    echo [2/3] Installing dependencies from requirements.txt...
-    ".venv\Scripts\python.exe" -m pip install -r requirements.txt
-    if errorlevel 1 (
-        echo Failed to install dependencies. Check your network connection.
-        pause
-        exit /b 1
-    )
+)
+
+rem ---- 2. Install / update dependencies (pip is idempotent & fast when up to date) ----
+echo [2/3] Ensuring dependencies are installed (requirements.txt)...
+"%PYEXE%" -m pip install -r requirements.txt
+if errorlevel 1 (
+    echo Failed to install dependencies. Check your network connection.
+    pause
+    exit /b 1
 )
 set PYTHONIOENCODING=utf-8
 
-rem ---- Check ffmpeg ----
-".venv\Scripts\python.exe" -c "import shutil,sys; sys.exit(0 if shutil.which('ffmpeg') else 1)" >nul 2>&1
+rem ---- 3. Check ffmpeg ----
+"%PYEXE%" -c "import shutil,sys; sys.exit(0 if shutil.which('ffmpeg') else 1)" >nul 2>&1
 if errorlevel 1 echo [WARN] ffmpeg not found. Install it first: winget install Gyan.FFmpeg
 
 rem ---- Run ----
@@ -47,6 +52,6 @@ if "%~1"=="" (
 )
 
 echo [3/3] Processing...
-".venv\Scripts\python.exe" srt_gen.py %*
+"%PYEXE%" srt_gen.py %*
 echo.
 pause
